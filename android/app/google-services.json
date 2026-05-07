@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "669419643578",
+    "project_id": "towwayshop",
+    "storage_bucket": "towwayshop.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:669419643578:android:46c9d009734a512ead5883",
+        "android_client_info": {
+          "package_name": "com.example.tow_way_shop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBReQAP2dr9JjdEAStA6AFx9jZbEfI8mV4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
