@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tow_way_shop/customer/product_card.dart';
+import 'package:tow_way_shop/customer/profile_page.dart';
 import '../auth/auth_service.dart';
 import '../services/database_service.dart';
 import '../models/product.dart';
 import '../models/order.dart';
+import '../services/share_app_service.dart';
+import 'cart_page.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -12,14 +15,13 @@ class ProductsScreen extends StatefulWidget {
   @override
   State<ProductsScreen> createState() => _ProductsScreenState();
 }
-
 class _ProductsScreenState extends State<ProductsScreen> {
   final DatabaseService _db = DatabaseService();
   final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = 'الكل';
   String _searchQuery = '';
   bool _isRefreshing = false;
-
+  Map<String, dynamic>? _userData;
   final List<String> _categories = [
     'الكل',
     'جوالات',
@@ -28,20 +30,18 @@ class _ProductsScreenState extends State<ProductsScreen> {
     'اكسسوارات',
     'إلكترونيات',
   ];
-
   @override
   void initState() {
     super.initState();
     _checkAuth();
+    _loadUserData();
   }
-
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
-
-  // ✅ التحقق من تسجيل الدخول
+  //  التحقق من تسجيل الدخول
   void _checkAuth() {
     if (FirebaseAuth.instance.currentUser == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -52,21 +52,28 @@ class _ProductsScreenState extends State<ProductsScreen> {
       });
     }
   }
-
-  // ✅ إعادة تحميل البيانات
+  //  تحميل بيانات المستخدم
+  Future<void> _loadUserData() async {
+    String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (userId.isNotEmpty) {
+      var data = await _db.getUserData(userId);
+      setState(() {
+        _userData = data;
+      });
+    }
+  }
+  //  إعادة تحميل البيانات
   Future<void> _refreshProducts() async {
     setState(() => _isRefreshing = true);
-    // انتظر ثانية لتحديث البيانات
+    await _loadUserData();
     await Future.delayed(const Duration(seconds: 1));
     if (mounted) {
       setState(() => _isRefreshing = false);
     }
   }
-
-  // ✅ إضافة إلى السلة مع معالجة الأخطاء
+  // إضافة إلى السلة مع معالجة الأخطاء
   Future<void> _addToCart(Product product) async {
     String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-
     if (userId.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -110,7 +117,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ تم إضافة ${product.name} إلى السلة'),
+            content: Text(' تم إضافة ${product.name} إلى السلة'),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 1),
           ),
@@ -120,7 +127,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ حدث خطأ: ${e.toString()}'),
+            content: Text(' حدث خطأ: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -128,7 +135,36 @@ class _ProductsScreenState extends State<ProductsScreen> {
     }
   }
 
-  // ✅ عرض خطأ الصلاحيات بشكل جميل
+  //  تسجيل الخروج
+  Future<void> _logout() async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تسجيل الخروج'),
+        content: const Text('هل أنت متأكد من تسجيل الخروج؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+              if (mounted) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) =>  AuthScreen()),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('تسجيل خروج'),
+          ),
+        ],
+      ),
+    );
+  }
+  //  عرض خطأ الصلاحيات بشكل جميل
   Widget _buildPermissionDenied() {
     return Center(
       child: Column(
@@ -175,16 +211,305 @@ class _ProductsScreenState extends State<ProductsScreen> {
       ),
     );
   }
+  //  بناء القائمة الجانبية (Drawer)
+  Widget _buildDrawer() {
+    User? user = FirebaseAuth.instance.currentUser;
+    String displayName = _userData?['name'] ?? user?.displayName ?? user?.email?.split('@')[0] ?? 'زائر';
+    String userEmail = user?.email ?? 'لا يوجد بريد';
+    String userPhone = _userData?['phone'] ?? 'غير مضاف';
+    String userAddress = _userData?['address'] ?? 'غير مضاف';
+
+    return Drawer(
+      child: Container(
+        color: const Color(0xFF2A667E),
+        child: Column(
+          children: [
+            //  Header - صورة وبيانات المستخدم
+            Container(
+              height: 200,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0D57A1), Color(0xFF1A137E)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // صورة المستخدم
+                  CircleAvatar(
+                    radius: 45,
+                    backgroundColor: Colors.white,
+                    child: CircleAvatar(
+                      radius: 42,
+                      backgroundColor: Colors.blue.shade100,
+                      child: user?.photoURL != null
+                          ? ClipOval(
+                        child: Image.network(
+                          user!.photoURL!,
+                          width: 84,
+                          height: 84,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Icon(
+                            Icons.person,
+                            size: 50,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      )
+                          : Icon(
+                        Icons.person,
+                        size: 50,
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    displayName,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    userEmail,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white70,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+
+            //  معلومات المستخدم الإضافية
+            Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Column(
+                children: [
+                  _buildInfoRow(Icons.phone, 'الجوال', userPhone),
+                  const Divider(color: Colors.white24, height: 12),
+                  _buildInfoRow(Icons.location_on, 'العنوان', userAddress),
+                ],
+              ),
+            ),
+
+            const Divider(color: Colors.white24, height: 0),
+
+            //  قائمة الخيارات
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  // المنتجات (الصفحة الحالية)
+                  ListTile(
+                    leading: const Icon(Icons.store, color: Colors.white),
+                    title: const Text('المنتجات', style: TextStyle(color: Colors.white)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.white54),
+                    selected: true,
+                    selectedTileColor: Colors.white.withOpacity(0.1),
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+
+                  // السلة
+                  ListTile(
+                    leading: const Icon(Icons.shopping_cart, color: Colors.white),
+                    title: const Text('سلة المشتريات', style: TextStyle(color: Colors.white)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.white54),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CartScreen()),
+                      );
+                    },
+                  ),
+
+                  // الملف الشخصي
+                  ListTile(
+                    leading: const Icon(Icons.person, color: Colors.white),
+                    title: const Text('الملف الشخصي', style: TextStyle(color: Colors.white)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.white54),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                      ).then((_) => _loadUserData()); // تحديث البيانات عند العودة
+                    },
+                  ),
+
+                  const Divider(color: Colors.white24, height: 20),
+
+                  // مشاركة التطبيق
+                  ListTile(
+                    leading: const Icon(Icons.share, color: Colors.green),
+                    title: const Text('مشاركة التطبيق', style: TextStyle(color: Colors.white)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.white54),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) =>  AboutDialog()),
+                      ).then((_) => _loadUserData());
+                      ShareAppService.shareAppLink(context);
+                    },
+                  ),
+
+                  // معلومات التطبيق
+                  ListTile(
+                    leading: const Icon(Icons.info, color: Colors.orange),
+                    title: const Text('معلومات عن التطبيق', style: TextStyle(color: Colors.white)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.white54),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showAboutDialog();
+                    },
+                  ),
+
+                  const Divider(color: Colors.white24, height: 20),
+
+                  // تسجيل خروج
+                  ListTile(
+                    leading: const Icon(Icons.logout, color: Colors.red),
+                    title: const Text('تسجيل خروج', style: TextStyle(color: Colors.red)),
+                    trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.redAccent),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _logout();
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            //  نسخة التطبيق
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'الإصدار 2.1.0',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  //  صف معلومات المستخدم
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Colors.white70),
+          const SizedBox(width: 12),
+          Text(
+            '$label: ',
+            style: const TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ نافذة معلومات التطبيق
+  void _showAboutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('عن TowWayShop'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.shopping_bag, size: 60, color: Colors.blue),
+            const SizedBox(height: 16),
+            const Text(
+              'TowWayShop',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'تطبيق تسوق سهل وسريع',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            _buildAboutRow('الإصدار', '1.0.0'),
+            _buildAboutRow('المطور', 'TowWay Team'),
+            _buildAboutRow('البريد', 'support@towway.com'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إغلاق'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAboutRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Text(
+            '$label: ',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Text(value),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('المنتجات'),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.green,
         foregroundColor: Colors.white,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         actions: [
-          // ✅ زر السلة مع عداد
+          //  زر السلة مع عداد
           StreamBuilder<Map<String, dynamic>?>(
             stream: _db.getCartStream(FirebaseAuth.instance.currentUser?.uid ?? ''),
             builder: (context, snapshot) {
@@ -198,8 +523,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   IconButton(
                     icon: const Icon(Icons.shopping_cart),
                     onPressed: () {
-                      // انتقل إلى صفحة السلة
-                      Navigator.pushNamed(context, '/cart');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CartScreen()),
+                      );
                     },
                   ),
                   if (cartCount > 0)
@@ -233,6 +560,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ),
         ],
       ),
+      drawer: _buildDrawer(), //  إضافة القائمة الجانبية
       body: RefreshIndicator(
         onRefresh: _refreshProducts,
         child: Column(
@@ -281,7 +609,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
               ),
             ),
 
-            // فلاتر التصنيفات - قابلة للتمرير الأفقية
+            // فلاتر التصنيفات
             SizedBox(
               height: 50,
               child: ListView.builder(
@@ -323,7 +651,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   : StreamBuilder<List<Product>>(
                 stream: _db.getProducts(),
                 builder: (context, snapshot) {
-                  // ✅ معالجة خطأ الصلاحيات
                   if (snapshot.hasError) {
                     String errorMsg = snapshot.error.toString();
                     if (errorMsg.contains('permission-denied')) {
@@ -361,7 +688,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
                   var products = snapshot.data ?? [];
 
-                  // التصفية حسب البحث والتصنيف
                   products = products.where((product) {
                     bool matchSearch = _searchQuery.isEmpty ||
                         product.name.toLowerCase().contains(_searchQuery);

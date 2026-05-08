@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'admin/admin_orders.dart';
+import 'admin/admin_products.dart';
 import 'auth/auth_service.dart';
 import 'customer/cart_page.dart';
 import 'customer/profile_page.dart';
@@ -38,6 +40,8 @@ class CustomerApp extends StatelessWidget {
         '/home': (context) =>  HomeScreen(),
         '/cart': (context) => const CartScreen(),
         '/profile': (context) => const ProfileScreen(),
+        '/products': (context) => const AdminProductsPage(),
+        '/orders': (context) => const AdminOrdersPage(),  // إدارة الطلبات
       },
     );
   }

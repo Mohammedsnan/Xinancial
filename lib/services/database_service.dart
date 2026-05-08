@@ -1,6 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
 import '../models/order.dart';
 import '../models/product.dart';
 
@@ -39,17 +37,14 @@ class DatabaseService {
     }
     return null;
   }
-
   // ==================== السلة ====================
   Future<Map<String, dynamic>?> getCart(String userId) async {
     var doc = await _firestore.collection('carts').doc(userId).get();
     return doc.exists ? doc.data() : null;
   }
-
   Future<void> saveCart(String userId, Map<String, dynamic> cartData) async {
     await _firestore.collection('carts').doc(userId).set(cartData);
   }
-
   Future<void> addToCart(String userId, CartItemModel item) async {
     var cart = await getCart(userId);
     List<dynamic> items = cart?['items'] ?? [];

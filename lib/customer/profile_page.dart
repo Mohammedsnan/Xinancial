@@ -13,7 +13,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final DatabaseService _db = DatabaseService();
-  final AuthService _authService = AuthService();
+  final AuthService _auths = AuthService();
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -73,7 +73,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
   }
-
 
   Future<void> _logout() async {
     await _auth.signOut();

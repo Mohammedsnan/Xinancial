@@ -85,7 +85,6 @@ class _AuthScreenState extends State<AuthScreen> {
       _showError('الرجاء إدخال كلمة المرور');
       return;
     }
-
     setState(() => _isLoading = true);
 
     final result = await authServicesignIn.signIn(email, password);
@@ -102,8 +101,6 @@ class _AuthScreenState extends State<AuthScreen> {
       _showError(result['message']);
     }
   }
-
-  /// ✅ دالة إنشاء حساب جديد للعميل
   Future<void> _handleSignUp() async {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
@@ -176,8 +173,8 @@ class _AuthScreenState extends State<AuthScreen> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: _isAdminLogin
-                ? [Colors.deepPurple, Colors.deepPurpleAccent]  // ✅ ألوان صاحب العمل
-                : [Colors.blue, Colors.lightBlueAccent],       // ✅ ألوان العميل
+                ? [Colors.deepPurple, Colors.deepPurpleAccent]
+                : [Colors.blue, Colors.lightBlueAccent],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -192,9 +189,9 @@ class _AuthScreenState extends State<AuthScreen> {
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: [ //  التبديل بين العميل وصاحب العمل مع تغيير الألوان
+                    children: [ //  التبديل بين العميل وصاحب العمل مع تغيير
                       _buildRoleSelector(),
-                      SizedBox(height: 30), // تغيير لون الأيقونة بناءً على نوع المستخدم
+                      SizedBox(height: 30),
                       Icon(
                         _isLoginMode ? Icons.login : Icons.person_add,
                         size: 60,
@@ -217,7 +214,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      SizedBox(height: 30), // حقل البريد الإلكتروني
+                      SizedBox(height: 30),
                       _buildEmailField(),
                       SizedBox(height: 15), // حقل كلمة المرور
                       _buildPasswordField(),
@@ -241,7 +238,7 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
       ),
     );
-  }/// واجهة اختيار الدور مع تغيير الألوان
+  }
   Widget _buildRoleSelector() {
     return Container(
       decoration: BoxDecoration(

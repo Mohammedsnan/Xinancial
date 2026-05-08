@@ -12,7 +12,6 @@ class AuthService {
       throw _getErrorMessage(e);
     }
   }
-
   Future<UserCredential?> signUpWithEmail(String email, String password) async {
     try {
       return await _auth.createUserWithEmailAndPassword(email: email, password: password);

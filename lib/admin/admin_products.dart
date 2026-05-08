@@ -22,11 +22,9 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
         type: FileType.custom,
         allowedExtensions: ['xlsx', 'xls'],
       );
-
       if (result != null) {
         List<Product> products = await _excelService.readProductsFromExcel(result.files.first.path!);
 
-        // حفظ المنتجات في Firebase
         for (var product in products) {
           await _firestore.collection('products').doc(product.id).set(product.toMap());
         }
@@ -41,8 +39,6 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
       );
     }
   }
-
-  // حذف منتج
   Future<void> _deleteProduct(String productId) async {
     await _firestore.collection('products').doc(productId).delete();
   }
@@ -77,8 +73,6 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
               ),
             ),
           ),
-
-          // قائمة المنتجات
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: _firestore.collection('products').snapshots(),
@@ -103,12 +97,12 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: Colors.blue.shade100,
+                          backgroundColor: Colors.green.shade100,
                           child: Text(product.name[0]),
                         ),
                         title: Text(product.name),
                         subtitle: Text(
-                          '${product.price.toStringAsFixed(2)} ريال | الكمية: ${product.quantity} | ${product.category}',
+                          '${product.price.toStringAsFixed(2)} RMS  | الكمية: ${product.quantity} | ${product.category}',
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -206,7 +200,6 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                   );
                   await _firestore.collection('products').doc(newId).set(newProduct.toMap());
                 } else {
-                  // تعديل
                   await _firestore.collection('products').doc(product.id).update({
                     'name': nameController.text,
                     'price': double.parse(priceController.text),

@@ -60,15 +60,11 @@ class ExcelService {
   Future<String> exportOrdersToExcel(List<OrderModel> orders) async {
     Excel excel = Excel.createExcel();
     Sheet sheetObject = excel['الطلبات'];
-
-    // تنسيق الرؤوس
     CellStyle headerStyle = CellStyle(
       bold: true,
       backgroundColorHex:ExcelColor.cyan ,
       fontColorHex:ExcelColor.cyan50,
     );
-
-    // رؤوس الأعمدة
     List<String> headers = [
       'رقم الطلب', 'اسم العميل', 'رقم الجوال', 'العنوان',
       'عدد المنتجات', 'الإجمالي', 'الحالة', 'التاريخ'
@@ -79,8 +75,6 @@ class ExcelService {
       cell.value = headers[i] as CellValue?;
       cell.cellStyle = headerStyle;
     }
-
-    // إضافة البيانات
     for (int i = 0; i < orders.length; i++) {
       OrderModel order = orders[i];
       int rowIndex = i + 1;
@@ -105,8 +99,6 @@ class ExcelService {
 
     return filePath;
   }
-
-  // تصدير المنتجات إلى Excel
   Future<String> exportProductsToExcel(List<Product> products) async {
     var excel = Excel.createExcel();
     Sheet sheetObject = excel['المنتجات'];
