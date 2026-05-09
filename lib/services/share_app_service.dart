@@ -21,21 +21,14 @@ class ShareAppService {
   static Future<void> shareAppLink(BuildContext context) async {
     try {
       final String message = '''
-🔥 حمل تطبيق TowWayShop الآن!
-
+🔥 حمل تطبيق Xinancial الآن!
 تسوق بسهولة وطلب المنتجات مباشرة من جوالك.
 
-🔗 رابط التحميل: $appDownloadLink
-
-📱 متوافق مع أندرويد
-✨ تجربة تسوق ممتعة
-🛍️ تشكيلة واسعة من المنتجات
-
-__________________________
-TowWayShop - متجرك الموثوق
+🔗 https://drive.google.com/file/d/139-ZQN7v1FMiIKA0Goy6BJDSfE5GOSOR/view?usp=drivesdk: $appDownloadLink 
+Xinancial - متجرك الموثوق
 ''';
 
-      await Share.share(message, subject: 'تحميل تطبيق TowWayShop');
+      await Share.share(message, subject: 'تحميل تطبيق Xinancial');
     } catch (e) {
       _showError(context, 'حدث خطأ أثناء المشاركة');
     }

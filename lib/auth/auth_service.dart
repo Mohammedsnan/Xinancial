@@ -28,12 +28,12 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _isAdminLogin = false;
   bool _isLoginMode = true; // true = تسجيل دخول, false = إنشاء حساب
 
-  /// ✅ إضافة متغير لتحديد ألوان الوضع الحالي
+  ///  إضافة متغير لتحديد ألوان الوضع الحالي
   Color get _primaryColor => _isAdminLogin ? Colors.deepPurple : Colors.blue;
   Color get _secondaryColor => _isAdminLogin ? Colors.deepPurpleAccent : Colors.lightBlue;
   Color get _backgroundColor => _isAdminLogin ? Colors.deepPurple.shade50 : Colors.blue.shade50;
 
-  /// ✅ التصحيح: إصلاح دالة _submit بالكامل
+  ///  التصحيح: إصلاح دالة _submit بالكامل
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -72,7 +72,7 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  /// ✅ دالة تسجيل دخول العميل
+  ///  دالة تسجيل دخول العميل
   Future<void> _handleSignIn() async {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
@@ -169,67 +169,70 @@ class _AuthScreenState extends State<AuthScreen> {
         centerTitle: true,
         elevation: 4,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: _isAdminLogin
-                ? [Colors.deepPurple, Colors.deepPurpleAccent]
-                : [Colors.blue, Colors.lightBlueAccent],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      body: Padding(
+        padding: const EdgeInsets.all(2.0),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: _isAdminLogin
+                  ? [Colors.deepPurple, Colors.deepPurpleAccent]
+                  : [Colors.blue, Colors.lightBlueAccent],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
           ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(25.0),
-          child: SafeArea(
-            child: Padding(
-              padding: EdgeInsets.all(20.0),
-              child: Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [ //  التبديل بين العميل وصاحب العمل مع تغيير
-                      _buildRoleSelector(),
-                      SizedBox(height: 30),
-                      Icon(
-                        _isLoginMode ? Icons.login : Icons.person_add,
-                        size: 60,
-                        color: Colors.white,
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        _getTitle(),
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
+          child: Padding(
+            padding: const EdgeInsets.all(30.0),
+            child: SafeArea(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: Form(
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [ //  التبديل بين العميل وصاحب العمل مع تغيير
+                        _buildRoleSelector(),
+                        SizedBox(height: 30),
+                        Icon(
+                          _isLoginMode ? Icons.login : Icons.person_add,
+                          size: 60,
                           color: Colors.white,
-                          shadows: [
-                            Shadow(
-                              blurRadius: 10,
-                              color: Colors.black26,
-                              offset: Offset(2, 2),
-                            ),
-                          ],
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 30),
-                      _buildEmailField(),
-                      SizedBox(height: 15), // حقل كلمة المرور
-                      _buildPasswordField(),
-                      SizedBox(height: 15), // حقل تأكيد كلمة المرور
-                      if (!_isLoginMode && !_isAdminLogin) ...[
-                        _buildConfirmPasswordField(),
-                        SizedBox(height: 15),
-                      ], // زر الإجراء الرئيسي
-                      _buildSubmitButton(),
-                      SizedBox(height: 10), // تبديل وضع تسجيل الدخول / إنشاء حساب
-                      if (!_isAdminLogin) _buildToggleModeButton(),
+                        SizedBox(height: 10),
+                        Text(
+                          _getTitle(),
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                blurRadius: 10,
+                                color: Colors.black26,
+                                offset: Offset(2, 2),
+                              ),
+                            ],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 30),
+                        _buildEmailField(),
+                        SizedBox(height: 15), // حقل كلمة المرور
+                        _buildPasswordField(),
+                        SizedBox(height: 15), // حقل تأكيد كلمة المرور
+                        if (!_isLoginMode && !_isAdminLogin) ...[
+                          _buildConfirmPasswordField(),
+                          SizedBox(height: 15),
+                        ], // زر الإجراء الرئيسي
+                        _buildSubmitButton(),
+                        SizedBox(height: 10), // تبديل وضع تسجيل الدخول / إنشاء حساب
+                        if (!_isAdminLogin) _buildToggleModeButton(),
 
-                      SizedBox(height: 10), // زر تسجيل الدخول بجوجل
-                      if (!_isAdminLogin) _buildGoogleSignInButton(),
-                    ],
+                        SizedBox(height: 10), // زر تسجيل الدخول بجوجل
+                        if (!_isAdminLogin) _buildGoogleSignInButton(),
+                      ],
+                    ),
                   ),
                 ),
               ),

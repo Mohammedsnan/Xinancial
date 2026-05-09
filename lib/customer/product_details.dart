@@ -115,9 +115,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 8),
-
                   // التصنيف
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -133,9 +131,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       style: TextStyle(color: Colors.blue.shade700),
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
                   // كمية المنتج
                   Row(
                     children: [
@@ -163,10 +159,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 20),
-
-                  // الوصف
                   const Text(
                     'الوصف:',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -182,9 +175,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       height: 1.5,
                     ),
                   ),
-
                   const SizedBox(height: 30),
-
                   // اختيار الكمية
                   if (widget.product.isAvailable) ...[
                     Container(
@@ -238,9 +229,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 20),
-
                     // زر إضافة للسلة
                     SizedBox(
                       width: double.infinity,

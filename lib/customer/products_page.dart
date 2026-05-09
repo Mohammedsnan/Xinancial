@@ -441,8 +441,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       ),
     );
   }
-
-  // ✅ نافذة معلومات التطبيق
+  //  نافذة معلومات التطبيق
   void _showAboutDialog() {
     showDialog(
       context: context,
@@ -561,190 +560,173 @@ class _ProductsScreenState extends State<ProductsScreen> {
         ],
       ),
       drawer: _buildDrawer(), //  إضافة القائمة الجانبية
-      body: RefreshIndicator(
-        onRefresh: _refreshProducts,
-        child: Column(
-          children: [
-            // شريط البحث
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.shade200,
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'بحث عن منتج...',
-                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                      icon: const Icon(Icons.clear, color: Colors.grey),
-                      onPressed: () {
-                        setState(() {
-                          _searchQuery = '';
-                          _searchController.clear();
-                        });
-                      },
-                    )
-                        : null,
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 15,
-                    ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: RefreshIndicator(
+          onRefresh: _refreshProducts,
+          child: Column(
+            children: [
+              // شريط البحث
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.shade200,
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  onChanged: (value) {
-                    setState(() => _searchQuery = value.toLowerCase());
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'بحث عن منتج...',
+                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.grey),
+                        onPressed: () {
+                          setState(() {
+                            _searchQuery = '';
+                            _searchController.clear();
+                          });
+                        },
+                      )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 15,
+                      ),
+                    ),
+                    onChanged: (value) {
+                      setState(() => _searchQuery = value.toLowerCase());
+                    },
+                  ),
+                ),
+              ),
+
+              // فلاتر التصنيفات
+              SizedBox(
+                height: 50,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _categories.length,
+                  itemBuilder: (context, index) {
+                    final category = _categories[index];
+                    final isSelected = _selectedCategory == category;
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: FilterChip(
+                        label: Text(category),
+                        selected: isSelected,
+                        onSelected: (_) {
+                          setState(() => _selectedCategory = category);
+                        },
+                        backgroundColor: Colors.grey.shade100,
+                        selectedColor: Colors.blue.shade100,
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.blue.shade700 : Colors.grey.shade700,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                        avatar: isSelected
+                            ? const Icon(Icons.check, size: 16, color: Colors.blue)
+                            : null,
+                      ),
+                    );
                   },
                 ),
               ),
-            ),
 
-            // فلاتر التصنيفات
-            SizedBox(
-              height: 50,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  final category = _categories[index];
-                  final isSelected = _selectedCategory == category;
-                  return Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: FilterChip(
-                      label: Text(category),
-                      selected: isSelected,
-                      onSelected: (_) {
-                        setState(() => _selectedCategory = category);
-                      },
-                      backgroundColor: Colors.grey.shade100,
-                      selectedColor: Colors.blue.shade100,
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.blue.shade700 : Colors.grey.shade700,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
-                      avatar: isSelected
-                          ? const Icon(Icons.check, size: 16, color: Colors.blue)
-                          : null,
-                    ),
-                  );
-                },
-              ),
-            ),
+              const SizedBox(height: 8),
 
-            const SizedBox(height: 8),
-
-            // قائمة المنتجات
-            Expanded(
-              child: _isRefreshing
-                  ? const Center(child: CircularProgressIndicator())
-                  : StreamBuilder<List<Product>>(
-                stream: _db.getProducts(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    String errorMsg = snapshot.error.toString();
-                    if (errorMsg.contains('permission-denied')) {
-                      return _buildPermissionDenied();
-                    }
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline, size: 60, color: Colors.red.shade300),
-                          const SizedBox(height: 16),
-                          Text('خطأ: ${snapshot.error}'),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _refreshProducts,
-                            child: const Text('إعادة المحاولة'),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  if (snapshot.connectionState == ConnectionState.waiting && !_isRefreshing) {
-                    return const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 16),
-                          Text('جاري تحميل المنتجات...'),
-                        ],
-                      ),
-                    );
-                  }
-
-                  var products = snapshot.data ?? [];
-
-                  products = products.where((product) {
-                    bool matchSearch = _searchQuery.isEmpty ||
-                        product.name.toLowerCase().contains(_searchQuery);
-                    bool matchCategory = _selectedCategory == 'الكل' ||
-                        product.category == _selectedCategory;
-                    return matchSearch && matchCategory;
-                  }).toList();
-
-                  if (products.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.inventory_2_outlined, size: 80, color: Colors.grey.shade400),
-                          const SizedBox(height: 16),
-                          Text(
-                            _searchQuery.isNotEmpty || _selectedCategory != 'الكل'
-                                ? 'لا توجد منتجات مطابقة للبحث'
-                                : 'لا توجد منتجات',
-                            style: TextStyle(color: Colors.grey.shade600),
-                          ),
-                          if (_searchQuery.isNotEmpty || _selectedCategory != 'الكل')
-                            TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _searchQuery = '';
-                                  _selectedCategory = 'الكل';
-                                  _searchController.clear();
-                                });
-                              },
-                              child: const Text('مسح الفلتر'),
+              // قائمة المنتجات
+              Expanded(
+                child: _isRefreshing
+                    ? const Center(child: CircularProgressIndicator())
+                    : StreamBuilder<List<Product>>(
+                  stream: _db.getProducts(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      String errorMsg = snapshot.error.toString();
+                      if (errorMsg.contains('permission-denied')) {
+                        return _buildPermissionDenied();
+                      }
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.error_outline, size: 60, color: Colors.red.shade300),
+                            const SizedBox(height: 16),
+                            Text('خطأ: ${snapshot.error}'),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _refreshProducts,
+                              child: const Text('إعادة المحاولة'),
                             ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return GridView.builder(
-                    padding: const EdgeInsets.all(16),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.65,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
-                    itemCount: products.length,
-                    itemBuilder: (context, index) {
-                      return ProductCard(
-                        product: products[index],
-                        onAddToCart: () => _addToCart(products[index]),
+                          ],
+                        ),
                       );
-                    },
-                  );
-                },
+                    }
+
+                    if (snapshot.connectionState == ConnectionState.waiting && !_isRefreshing) {
+                      return const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text('جاري تحميل المنتجات...'),
+                          ],
+                        ),
+                      );
+                    }
+                    var products = snapshot.data ?? [];
+                    products = products.where((product) {
+                      bool matchSearch = _searchQuery.isEmpty ||
+                          product.name.toLowerCase().contains(_searchQuery);
+                      bool matchCategory = _selectedCategory == 'الكل' ||
+                          product.category == _selectedCategory;
+                      return matchSearch && matchCategory;
+                    }).toList();
+                    if (products.isEmpty) {
+                      return const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.inventory, size: 80, color: Colors.grey),
+                            SizedBox(height: 16),
+                            Text('لا توجد منتجات'),
+                          ],
+                        ),
+                      );
+                    }
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.75,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                      ),
+                      itemCount: products.length,
+                      itemBuilder: (context, index) {
+                        return ProductCard(
+                          product: products[index],
+                          onAddToCart: () => _addToCart(products[index]),
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

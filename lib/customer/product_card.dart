@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:tow_way_shop/customer/product_details.dart';
 import '../models/product.dart';
@@ -41,10 +42,14 @@ class ProductCard extends StatelessWidget {
                   ),
                 ),
                 child: product.imageUrl.isNotEmpty
-                    ? Image.network(
-                  product.imageUrl,
+                    ? CachedNetworkImage(
+                  imageUrl: product.imageUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Icon(
+                  width: double.infinity,
+                  placeholder: (context, url) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  errorWidget: (context, url, error) => Icon(
                     Icons.shopping_bag,
                     size: 50,
                     color: Colors.blue.shade300,

@@ -1,8 +1,14 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
-import '../models/product.dart';
-import '../services/excel_service.dart';
+import 'package:excel/excel.dart' hide Border;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
+import '../auth/auth_service.dart';
+import 'admin_orders.dart';
+import 'package:file_picker/file_picker.dart';
 
 class AdminProductsPage extends StatefulWidget {
   const AdminProductsPage({super.key});
@@ -13,20 +19,87 @@ class AdminProductsPage extends StatefulWidget {
 
 class _AdminProductsPageState extends State<AdminProductsPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final ExcelService _excelService = ExcelService();
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
-  // استيراد المنتجات من Excel
+  // متغيرات لإضافة/تعديل منتج
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _quantityController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _categoryController = TextEditingController();
+  String? _selectedImageUrl;
+  bool _isUploading = false;
+
+  Future<String?> _uploadImage(File imageFile) async {
+    try {
+      String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+      Reference ref = _storage.ref().child('products/$fileName.jpg');
+      await ref.putFile(imageFile);
+      return await ref.getDownloadURL();
+    } catch (e) {
+      print('خطأ في رفع الصورة: $e');
+      return null;
+    }
+  }
+
+  Future<void> _pickImage() async {
+    FilePickerResult? result = await FilePicker.pickFiles(
+      type: FileType.image,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+    );
+
+    if (result != null) {
+      setState(() {
+        _isUploading = true;
+      });
+
+      File imageFile = File(result.files.single.path!);
+      String? imageUrl = await _uploadImage(imageFile);
+
+      setState(() {
+        _selectedImageUrl = imageUrl;
+        _isUploading = false;
+      });
+
+      if (imageUrl != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم رفع الصورة بنجاح'), backgroundColor: Colors.green),
+        );
+      }
+    }
+  }
+
   Future<void> _importFromExcel() async {
     try {
       FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['xlsx', 'xls'],
       );
+
       if (result != null) {
-        List<Product> products = await _excelService.readProductsFromExcel(result.files.first.path!);
+        var bytes = result.files.first.bytes;
+        var excel = Excel.decodeBytes(bytes!);
+        var sheet = excel.tables[excel.tables.keys.first];
+        var products = <Map<String, dynamic>>[];
+
+        for (var row in sheet!.rows.skip(1)) {
+          if (row[0]?.value != null && row[0]?.value.toString().isNotEmpty == true) {
+            products.add({
+              'name': row[0]?.value.toString() ?? '',
+              'price': double.tryParse(row[1]?.value.toString() ?? '0') ?? 0,
+              'quantity': int.tryParse(row[2]?.value.toString() ?? '0') ?? 0,
+              'description': row[3]?.value.toString() ?? '',
+              'category': row[4]?.value.toString() ?? '',
+              'imageUrl': row[5]?.value.toString() ?? '',
+              'createdAt': FieldValue.serverTimestamp(),
+            });
+          }
+        }
 
         for (var product in products) {
-          await _firestore.collection('products').doc(product.id).set(product.toMap());
+          await _firestore.collection('products').add(product);
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -39,8 +112,236 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
       );
     }
   }
+
+  Future<void> _addProduct() async {
+    if (_nameController.text.isEmpty || _priceController.text.isEmpty) {
+      _showError('يرجى ملء الاسم والسعر');
+      return;
+    }
+
+    Map<String, dynamic> productData = {
+      'name': _nameController.text,
+      'price': double.parse(_priceController.text),
+      'quantity': int.tryParse(_quantityController.text) ?? 0,
+      'description': _descriptionController.text,
+      'category': _categoryController.text,
+      'imageUrl': _selectedImageUrl ?? '',
+      'createdAt': FieldValue.serverTimestamp(),
+    };
+
+    await _firestore.collection('products').add(productData);
+
+    _clearForm();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم إضافة المنتج بنجاح'), backgroundColor: Colors.green),
+      );
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _updateProduct(String productId, Map<String, dynamic> currentData) async {
+    Map<String, dynamic> updatedData = {
+      'name': _nameController.text,
+      'price': double.parse(_priceController.text),
+      'quantity': int.tryParse(_quantityController.text) ?? 0,
+      'description': _descriptionController.text,
+      'category': _categoryController.text,
+    };
+
+    if (_selectedImageUrl != null && _selectedImageUrl != currentData['imageUrl']) {
+      updatedData['imageUrl'] = _selectedImageUrl;
+    }
+
+    await _firestore.collection('products').doc(productId).update(updatedData);
+
+    _clearForm();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم تحديث المنتج بنجاح'), backgroundColor: Colors.green),
+      );
+      Navigator.pop(context);
+    }
+  }
+
   Future<void> _deleteProduct(String productId) async {
     await _firestore.collection('products').doc(productId).delete();
+  }
+
+  void _clearForm() {
+    _nameController.clear();
+    _priceController.clear();
+    _quantityController.clear();
+    _descriptionController.clear();
+    _categoryController.clear();
+    _selectedImageUrl = null;
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
+  void _showProductDialog({String? productId, Map<String, dynamic>? productData}) {
+    _nameController.text = productData?['name'] ?? '';
+    _priceController.text = productData?['price']?.toString() ?? '';
+    _quantityController.text = productData?['quantity']?.toString() ?? '';
+    _descriptionController.text = productData?['description'] ?? '';
+    _categoryController.text = productData?['category'] ?? '';
+    _selectedImageUrl = productData?['imageUrl'];
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text(productId == null ? 'إضافة منتج جديد' : 'تعديل المنتج'),
+            content: SingleChildScrollView(
+              child: SizedBox(
+                width: 500,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // صورة المنتج
+                    GestureDetector(
+                      onTap: () async {
+                        await _pickImage();
+                        setDialogState(() {});
+                      },
+                      child: Container(
+                        height: 150,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: _isUploading
+                            ? const Center(child: CircularProgressIndicator())
+                            : (_selectedImageUrl != null && _selectedImageUrl!.isNotEmpty)
+                            ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            _selectedImageUrl!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.broken_image,
+                              size: 50,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        )
+                            : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.cloud_upload, size: 50, color: Colors.blue.shade300),
+                            const SizedBox(height: 8),
+                            Text(
+                              'اضغط لرفع صورة المنتج',
+                              style: TextStyle(color: Colors.grey.shade600),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'اسم المنتج',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.production_quantity_limits),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _priceController,
+                            decoration: const InputDecoration(
+                              labelText: 'السعر (ر.س)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.attach_money),
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: _quantityController,
+                            decoration: const InputDecoration(
+                              labelText: 'الكمية',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.inventory),
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _categoryController,
+                      decoration: const InputDecoration(
+                        labelText: 'التصنيف',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.category),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'الوصف',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.description),
+                      ),
+                      maxLines: 3,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  _clearForm();
+                  Navigator.pop(context);
+                },
+                child: const Text('إلغاء'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (productId == null) {
+                    await _addProduct();
+                  } else {
+                    await _updateProduct(productId, productData!);
+                  }
+                  _clearForm();
+                  if (mounted) Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                ),
+                child: Text(productId == null ? 'إضافة' : 'حفظ' , style: TextStyle(color: Colors.white60),),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _logout() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('adminLoggedIn');
+    if (mounted) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => AuthScreen()));
+    }
   }
 
   @override
@@ -48,8 +349,7 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('إدارة المنتجات'),
-        centerTitle: true,
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -57,161 +357,190 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
             onPressed: _importFromExcel,
             tooltip: 'استيراد من Excel',
           ),
+          IconButton(
+            icon: const Icon(Icons.shopping_bag),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminOrdersPage()));
+            },
+            tooltip: 'الطلبات',
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _logout,
+            tooltip: 'تسجيل خروج',
+          ),
         ],
       ),
       body: Column(
         children: [
-          // زر إضافة منتج جديد
           Padding(
             padding: const EdgeInsets.all(16),
-            child: ElevatedButton.icon(
-              onPressed: () => _showProductDialog(),
-              icon: const Icon(Icons.add),
-              label: const Text('إضافة منتج جديد'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showProductDialog(),
+                    icon: const Icon(Icons.add),
+                    label: const Text('إضافة منتج جديد',style: TextStyle(color: Colors.white60),),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 50),
+                      backgroundColor: Colors.deepPurple,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
+          // شريط البحث
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'بحث عن منتج...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+              onChanged: (value) {
+                setState(() => _searchQuery = value.toLowerCase());
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: _firestore.collection('products').snapshots(),
+              stream: _firestore.collection('products').orderBy('createdAt', descending: true).snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(child: Text('خطأ: ${snapshot.error}'));
                 }
-
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                var products = snapshot.data!.docs.map((doc) =>
-                    Product.fromFirestore(doc.data() as Map<String, dynamic>, doc.id)).toList();
+                var products = snapshot.data!.docs.where((doc) {
+                  var data = doc.data() as Map<String, dynamic>;
+                  return _searchQuery.isEmpty ||
+                      (data['name'] ?? '').toString().toLowerCase().contains(_searchQuery);
+                }).toList();
 
-                return ListView.builder(
+                if (products.isEmpty) {
+                  return const Center(child: Text('لا توجد منتجات'));
+                }
+
+                return GridView.builder(
                   padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    childAspectRatio: 0.8,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
                   itemCount: products.length,
                   itemBuilder: (context, index) {
-                    Product product = products[index];
+                    var doc = products[index];
+                    var data = doc.data() as Map<String, dynamic>;
                     return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: Colors.green.shade100,
-                          child: Text(product.name[0]),
-                        ),
-                        title: Text(product.name),
-                        subtitle: Text(
-                          '${product.price.toStringAsFixed(2)} RMS  | الكمية: ${product.quantity} | ${product.category}',
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.orange),
-                              onPressed: () => _showProductDialog(product: product),
+                      elevation: 3,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // صورة المنتج
+                          Container(
+                            height: 120,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(15),
+                                topRight: Radius.circular(15),
+                              ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteProduct(product.id),
+                            child: (data['imageUrl'] != null && data['imageUrl'].toString().isNotEmpty)
+                                ? CachedNetworkImage(
+                              imageUrl: data['https://drive.google.com'],  //  الرابط هنا
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              placeholder: (context, url) => const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                              errorWidget: (context, url, error) => Icon(
+                                Icons.image_not_supported,
+                                size: 40,
+                                color: Colors.grey.shade400,
+                              ),
+                            )
+                                : Center(
+                              child: Icon(
+                                Icons.shopping_bag,
+                                size: 50,
+                                color: Colors.grey.shade400,
+                              ),
                             ),
-                          ],
-                        ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  data['name'] ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${data['price'] ?? 0} ر.س',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green.shade700,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'الكمية: ${data['quantity'] ?? 0}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit, size: 20, color: Colors.orange),
+                                      onPressed: () => _showProductDialog(
+                                        productId: doc.id,
+                                        productData: data,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                                      onPressed: () => _deleteProduct(doc.id),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   },
                 );
               },
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showProductDialog({Product? product}) {
-    final formKey = GlobalKey<FormState>();
-    TextEditingController nameController = TextEditingController(text: product?.name ?? '');
-    TextEditingController priceController = TextEditingController(text: product?.price.toString() ?? '');
-    TextEditingController quantityController = TextEditingController(text: product?.quantity.toString() ?? '');
-    TextEditingController descriptionController = TextEditingController(text: product?.description ?? '');
-    TextEditingController categoryController = TextEditingController(text: product?.category ?? '');
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(product == null ? 'إضافة منتج جديد' : 'تعديل المنتج'),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: 'اسم المنتج'),
-                  validator: (v) => v?.isEmpty ?? true ? 'الحقل مطلوب' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: priceController,
-                  decoration: const InputDecoration(labelText: 'السعر'),
-                  keyboardType: TextInputType.number,
-                  validator: (v) => v?.isEmpty ?? true ? 'الحقل مطلوب' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: quantityController,
-                  decoration: const InputDecoration(labelText: 'الكمية'),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: descriptionController,
-                  decoration: const InputDecoration(labelText: 'الوصف'),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: categoryController,
-                  decoration: const InputDecoration(labelText: 'التصنيف'),
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
-          ElevatedButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                if (product == null) {
-                  // إضافة جديد
-                  String newId = DateTime.now().millisecondsSinceEpoch.toString();
-                  Product newProduct = Product(
-                    id: newId,
-                    name: nameController.text,
-                    price: double.parse(priceController.text),
-                    quantity: int.parse(quantityController.text),
-                    description: descriptionController.text,
-                    category: categoryController.text,
-                    imageUrl: '',
-                    createdAt: DateTime.now(),
-                  );
-                  await _firestore.collection('products').doc(newId).set(newProduct.toMap());
-                } else {
-                  await _firestore.collection('products').doc(product.id).update({
-                    'name': nameController.text,
-                    'price': double.parse(priceController.text),
-                    'quantity': int.parse(quantityController.text),
-                    'description': descriptionController.text,
-                    'category': categoryController.text,
-                  });
-                }
-                Navigator.pop(context);
-              }
-            },
-            child: Text(product == null ? 'إضافة' : 'حفظ'),
           ),
         ],
       ),
