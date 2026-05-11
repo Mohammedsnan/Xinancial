@@ -31,43 +31,63 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
   final TextEditingController _categoryController = TextEditingController();
   String? _selectedImageUrl;
   bool _isUploading = false;
-
-  Future<String?> _uploadImage(File imageFile) async {
+  Future<void> _pickImage() async {
     try {
-      String fileName = DateTime.now().millisecondsSinceEpoch.toString();
-      Reference ref = _storage.ref().child('products/$fileName.jpg');
-      await ref.putFile(imageFile);
-      return await ref.getDownloadURL();
+      FilePickerResult? result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+      );
+
+      if (result != null) {
+        setState(() => _isUploading = true);
+
+        File imageFile = File(result.files.single.path!);
+        String? imageUrl = await _uploadImage(imageFile);
+
+        setState(() {
+          _selectedImageUrl = imageUrl;
+          _isUploading = false;
+        });
+
+        if (imageUrl != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text(' تم رفع الصورة بنجاح'), backgroundColor: Colors.green),
+          );
+        }
+      }
     } catch (e) {
-      print('خطأ في رفع الصورة: $e');
-      return null;
+      setState(() => _isUploading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(' خطأ: $e'), backgroundColor: Colors.red),
+      );
     }
   }
-
-  Future<void> _pickImage() async {
-    FilePickerResult? result = await FilePicker.pickFiles(
-      type: FileType.image,
-      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
-    );
-
-    if (result != null) {
-      setState(() {
-        _isUploading = true;
-      });
-
-      File imageFile = File(result.files.single.path!);
-      String? imageUrl = await _uploadImage(imageFile);
-
-      setState(() {
-        _selectedImageUrl = imageUrl;
-        _isUploading = false;
-      });
-
-      if (imageUrl != null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم رفع الصورة بنجاح'), backgroundColor: Colors.green),
-        );
+  Future<String?> _uploadImage(File imageFile) async {
+    try {
+      if (!await imageFile.exists()) {
+        print(' الملف غير موجود');
+        return null;
       }
+      String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      Reference ref = _storage.ref().child('products/$fileName');
+
+      print(' جاري رفع الصورة: $fileName');
+
+      UploadTask uploadTask = ref.putFile(imageFile);
+
+      TaskSnapshot snapshot = await uploadTask;
+
+      if (snapshot.state == TaskState.success) {
+        String downloadUrl = await snapshot.ref.getDownloadURL();
+        print(' تم الرفع بنجاح: $downloadUrl');
+        return downloadUrl;
+      } else {
+        print(' فشل الرفع: ${snapshot.state}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ خطأ في رفع الصورة: $e');
+      return null;
     }
   }
 
@@ -204,23 +224,17 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // صورة المنتج
-                    GestureDetector(
-                      onTap: () async {
-                        await _pickImage();
-                        setDialogState(() {});
-                      },
-                      child: Container(
-                        height: 150,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: _isUploading
-                            ? const Center(child: CircularProgressIndicator())
-                            : (_selectedImageUrl != null && _selectedImageUrl!.isNotEmpty)
-                            ? ClipRRect(
+                    Container(
+                      height: 150,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: _isUploading ? const Center(child: CircularProgressIndicator())
+                          : (_selectedImageUrl != null && _selectedImageUrl!.isNotEmpty)
+                          ? ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: Image.network(
                             _selectedImageUrl!,
@@ -232,20 +246,67 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                               color: Colors.grey,
                             ),
                           ),
+                      ) : const Center(
+                       child: Column(
+                         mainAxisAlignment: MainAxisAlignment.center,
+                         children: [
+                           Icon(Icons.image, size: 50, color: Colors.grey),
+                           SizedBox(height: 8),
+                           Text('لا توجد صورة'),
+                         ],
+                       ),
+                      )
+                    ),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _isUploading ? null : () async {
+                          await _pickImage();
+                          setDialogState(() {});
+                        },
+                        icon: _isUploading
+                            ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                            : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.cloud_upload, size: 50, color: Colors.blue.shade300),
-                            const SizedBox(height: 8),
-                            Text(
-                              'اضغط لرفع صورة المنتج',
-                              style: TextStyle(color: Colors.grey.shade600),
-                            ),
-                          ],
+                            : const Icon(Icons.upload_file),
+                        label: Text(_isUploading ? 'جاري الرفع...' : ' رفع صورة المنتج'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue.shade700,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
                     ),
+
+                    // زر إزالة الصورة
+                    if (_selectedImageUrl != null && _selectedImageUrl!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              setDialogState(() {
+                                _selectedImageUrl = null;
+                              });
+                            },
+                            icon: const Icon(Icons.delete_outline, color: Colors.red),
+                            label: const Text(' إزالة الصورة', style: TextStyle(color: Colors.red)),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Colors.red),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: _nameController,
@@ -343,7 +404,6 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => AuthScreen()));
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -421,7 +481,6 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-
                 var products = snapshot.data!.docs.where((doc) {
                   var data = doc.data() as Map<String, dynamic>;
                   return _searchQuery.isEmpty ||
@@ -431,7 +490,6 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                 if (products.isEmpty) {
                   return const Center(child: Text('لا توجد منتجات'));
                 }
-
                 return GridView.builder(
                   padding: const EdgeInsets.all(16),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -463,7 +521,7 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                             ),
                             child: (data['imageUrl'] != null && data['imageUrl'].toString().isNotEmpty)
                                 ? CachedNetworkImage(
-                              imageUrl: data['https://drive.google.com'],  //  الرابط هنا
+                              imageUrl: data['imageUrl'],  //  الرابط هنا
                               fit: BoxFit.cover,
                               width: double.infinity,
                               placeholder: (context, url) => const Center(
