@@ -190,7 +190,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: OutlinedButton.icon(
                 onPressed: _logout,
                 icon: const Icon(Icons.logout),
-                label: const Text('تسجيل خروج'),
+                label: const Text('تسجيل الدخول '),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.red,
                   side: const BorderSide(color: Colors.red),

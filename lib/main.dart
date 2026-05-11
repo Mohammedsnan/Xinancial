@@ -4,6 +4,7 @@ import 'admin/admin_orders.dart';
 import 'admin/admin_products.dart';
 import 'auth/auth_service.dart';
 import 'customer/cart_page.dart';
+import 'customer/products_page.dart';
 import 'customer/profile_page.dart';
 import 'firebase_options.dart';
 import 'home_screenPage.dart';
@@ -36,12 +37,8 @@ class CustomerApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) =>  AuthScreen(),
-        '/home': (context) =>  HomeScreen(),
-        '/cart': (context) => const CartScreen(),
-        '/profile': (context) => const ProfileScreen(),
-        '/products': (context) => const AdminProductsPage(),
-        '/orders': (context) => const AdminOrdersPage(),  // إدارة الطلبات
+        '/': (context) =>  SplashScreen(),
+        '/home': (context) =>  ProductsScreen(),
       },
     );
   }

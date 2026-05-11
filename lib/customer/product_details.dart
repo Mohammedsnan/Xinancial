@@ -56,6 +56,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
+        backgroundColor: Colors.white60,
+        foregroundColor: Colors.black,
         title: Text(widget.product.name),
       ),
       body: SingleChildScrollView(
@@ -211,7 +214,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 child: Text(
                                   '$_quantity',
                                   style: const TextStyle(
-                                    fontSize: 18,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -236,7 +239,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       child: ElevatedButton.icon(
                         onPressed: _addToCart,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
@@ -246,7 +249,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         icon: const Icon(Icons.add_shopping_cart),
                         label: const Text(
                           'إضافة إلى السلة',
-                          style: TextStyle(fontSize: 18),
+                          style: TextStyle(fontSize: 15),
                         ),
                       ),
                     ),

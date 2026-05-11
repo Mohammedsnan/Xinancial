@@ -1,9 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:tow_way_shop/auth/signInWithGoogleService.dart';
 import '../admin/admin_products.dart';
 import '../customer/products_page.dart';
-import '../home_screenPage.dart' show HomeScreen;
+import '../home_screenPage.dart' show  SplashScreen;
 import 'Admin_Login.dart';
 import 'SignInSerivce.dart';
 import 'signUpService.dart';
@@ -33,7 +32,6 @@ class _AuthScreenState extends State<AuthScreen> {
   Color get _secondaryColor => _isAdminLogin ? Colors.deepPurpleAccent : Colors.lightBlue;
   Color get _backgroundColor => _isAdminLogin ? Colors.deepPurple.shade50 : Colors.blue.shade50;
 
-  ///  التصحيح: إصلاح دالة _submit بالكامل
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -54,7 +52,7 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  /// ✅ دالة تسجيل دخول المدير
+
   Future<void> _handleAdminLogin() async {
     bool success = await authServicesadmin.adminLogin(
       emailController.text.trim(),
@@ -72,7 +70,7 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  ///  دالة تسجيل دخول العميل
+
   Future<void> _handleSignIn() async {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
@@ -471,7 +469,7 @@ class _AuthScreenState extends State<AuthScreen> {
       _showSuccess(result['message']);
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => HomeScreen()),
+        MaterialPageRoute(builder: (_) => SplashScreen()),
       );
     } else if (mounted) {
       _showError(result['message']);

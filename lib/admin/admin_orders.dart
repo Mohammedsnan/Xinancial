@@ -48,8 +48,8 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
       appBar: AppBar(
         title: const Text('إدارة الطلبات'),
         centerTitle: true,
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white60,
+        foregroundColor: Colors.black,
         actions: [
           IconButton(
             icon: const Icon(Icons.download),

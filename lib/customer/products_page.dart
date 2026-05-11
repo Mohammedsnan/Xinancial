@@ -221,7 +221,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
     return Drawer(
       child: Container(
-        color: const Color(0xFF2A667E),
+        color: Colors.white60,
         child: Column(
           children: [
             //  Header - صورة وبيانات المستخدم
@@ -230,7 +230,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
               width: double.infinity,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF0D57A1), Color(0xFF1A137E)],
+                  colors: [Colors.white60, Colors.white60],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -245,10 +245,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   // صورة المستخدم
                   CircleAvatar(
                     radius: 45,
-                    backgroundColor: Colors.white,
+                    backgroundColor: Colors.black12,
                     child: CircleAvatar(
                       radius: 42,
-                      backgroundColor: Colors.blue.shade100,
+                      backgroundColor: Colors.black12,
                       child: user?.photoURL != null
                           ? ClipOval(
                         child: Image.network(
@@ -259,7 +259,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           errorBuilder: (_, __, ___) => Icon(
                             Icons.person,
                             size: 50,
-                            color: Colors.blue.shade700,
+                            color: Colors.blue,
                           ),
                         ),
                       )
@@ -276,7 +276,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Colors.black,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -286,7 +286,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     userEmail,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.white70,
+                      color: Colors.black,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -295,47 +295,44 @@ class _ProductsScreenState extends State<ProductsScreen> {
               ),
             ),
 
-            //  معلومات المستخدم الإضافية
             Container(
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.black.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(15),
               ),
               child: Column(
                 children: [
                   _buildInfoRow(Icons.phone, 'الجوال', userPhone),
-                  const Divider(color: Colors.white24, height: 12),
+                  const Divider(color: Colors.black, height: 12),
                   _buildInfoRow(Icons.location_on, 'العنوان', userAddress),
                 ],
               ),
             ),
 
-            const Divider(color: Colors.white24, height: 0),
+            const Divider(color: Colors.black, height: 0),
 
-            //  قائمة الخيارات
             Expanded(
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
                   // المنتجات (الصفحة الحالية)
                   ListTile(
-                    leading: const Icon(Icons.store, color: Colors.white),
-                    title: const Text('المنتجات', style: TextStyle(color: Colors.white)),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.white54),
+                    leading: const Icon(Icons.store, color: Colors.black),
+                    title: const Text('المنتجات', style: TextStyle(color: Colors.black)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
                     selected: true,
-                    selectedTileColor: Colors.white.withOpacity(0.1),
+                    selectedTileColor: Colors.black.withOpacity(0.1),
                     onTap: () {
                       Navigator.pop(context);
                     },
                   ),
 
-                  // السلة
                   ListTile(
-                    leading: const Icon(Icons.shopping_cart, color: Colors.white),
-                    title: const Text('سلة المشتريات', style: TextStyle(color: Colors.white)),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.white54),
+                    leading: const Icon(Icons.shopping_cart, color: Colors.black),
+                    title: const Text('سلة المشتريات', style: TextStyle(color: Colors.black)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -347,9 +344,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
                   // الملف الشخصي
                   ListTile(
-                    leading: const Icon(Icons.person, color: Colors.white),
-                    title: const Text('الملف الشخصي', style: TextStyle(color: Colors.white)),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.white54),
+                    leading: const Icon(Icons.person, color: Colors.black),
+                    title: const Text('الملف الشخصي', style: TextStyle(color: Colors.black)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -359,13 +356,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     },
                   ),
 
-                  const Divider(color: Colors.white24, height: 20),
+                  const Divider(color: Colors.black, height: 20),
 
                   // مشاركة التطبيق
                   ListTile(
-                    leading: const Icon(Icons.share, color: Colors.green),
-                    title: const Text('مشاركة التطبيق', style: TextStyle(color: Colors.white)),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.white54),
+                    leading: const Icon(Icons.share, color: Colors.black),
+                    title: const Text('مشاركة التطبيق', style: TextStyle(color: Colors.black)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -378,16 +375,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
                   // معلومات التطبيق
                   ListTile(
-                    leading: const Icon(Icons.info, color: Colors.orange),
-                    title: const Text('معلومات عن التطبيق', style: TextStyle(color: Colors.white)),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.white54),
+                    leading: const Icon(Icons.info, color: Colors.black),
+                    title: const Text('معلومات عن التطبيق', style: TextStyle(color: Colors.black)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
                     onTap: () {
                       Navigator.pop(context);
                       _showAboutDialog();
                     },
                   ),
 
-                  const Divider(color: Colors.white24, height: 20),
+                  const Divider(color: Colors.black, height: 20),
 
                   // تسجيل خروج
                   ListTile(
@@ -408,7 +405,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
               padding: const EdgeInsets.all(16),
               child: Text(
                 'الإصدار 2.1.0',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(color: Colors.black, fontSize: 12),
               ),
             ),
           ],
@@ -446,14 +443,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('عن TowWayShop'),
+        title: const Text('عن Xinancial'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.shopping_bag, size: 60, color: Colors.blue),
             const SizedBox(height: 16),
             const Text(
-              'TowWayShop',
+              'Xinancial',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -465,7 +462,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
             const Divider(),
             const SizedBox(height: 8),
             _buildAboutRow('الإصدار', '1.0.0'),
-            _buildAboutRow('المطور', 'TowWay Team'),
+            _buildAboutRow('المطور', 'Xinancial '),
             _buildAboutRow('البريد', 'support@towway.com'),
           ],
         ),
@@ -499,8 +496,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('المنتجات'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white60,
+        foregroundColor: Colors.black,
         leading: Builder(
           builder: (context) => IconButton(
             icon: const Icon(Icons.menu),
@@ -635,7 +632,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                         avatar: isSelected
-                            ? const Icon(Icons.check, size: 16, color: Colors.blue)
+                            ? const Icon(Icons.check, size: 16, color: Colors.purple)
                             : null,
                       ),
                     );
